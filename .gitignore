@@ -34,3 +34,5 @@ build/CMakeFiles/traffic_simulation.dir/src/TrafficLight.cpp.o
 build/CMakeFiles/traffic_simulation.dir/src/TrafficObject.cpp.o
 build/CMakeFiles/traffic_simulation.dir/src/TrafficSimulator-Final.cpp.o
 build/CMakeFiles/traffic_simulation.dir/src/Vehicle.cpp.o
+.vscode/settings.json
+.vscode/settings.json

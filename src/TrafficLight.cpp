@@ -4,7 +4,7 @@
 
 /* Implementation of class "MessageQueue" */
 
-/* 
+ 
 template <typename T>
 T MessageQueue<T>::receive()
 {
@@ -19,11 +19,10 @@ void MessageQueue<T>::send(T &&msg)
     // FP.4a : The method send should use the mechanisms std::lock_guard<std::mutex> 
     // as well as _condition.notify_one() to add a new message to the queue and afterwards send a notification.
 }
-*/
+
 
 /* Implementation of class "TrafficLight" */
 
-/* 
 TrafficLight::TrafficLight()
 {
     _currentPhase = TrafficLightPhase::red;
@@ -47,12 +46,31 @@ void TrafficLight::simulate()
 }
 
 // virtual function which is executed in a thread
+std::random_device rd;  //Will be used to obtain a seed for the random number engine
+std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
+std::uniform_int_distribution<> distrib(4000, 6000);
+
 void TrafficLight::cycleThroughPhases()
 {
     // FP.2a : Implement the function with an infinite loop that measures the time between two loop cycles 
     // and toggles the current phase of the traffic light between red and green and sends an update method 
     // to the message queue using move semantics. The cycle duration should be a random value between 4 and 6 seconds. 
     // Also, the while-loop should use std::this_thread::sleep_for to wait 1ms between two cycles. 
-}
+    auto timeBetweenCycles = std::chrono::milliseconds(distrib(gen));
 
-*/
+    auto start = std::chrono::high_resolution_clock::now(); // initialisation
+
+    while(true)
+    {
+        auto end = std::chrono::high_resolution_clock::now();
+
+        if (end - start > timeBetweenCycles)
+        {
+            if (getCurrentPhase() == TrafficLightPhase::green) _currentPhase = TrafficLightPhase::red;
+            else  _currentPhase = TrafficLightPhase::green;
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            _messageQueue.send(std::move(_currentPhase));
+            auto start = std::chrono::high_resolution_clock::now();
+        }
+    }
+}
