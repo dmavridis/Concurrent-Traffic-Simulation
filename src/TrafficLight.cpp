@@ -1,5 +1,6 @@
 #include <iostream>
 #include <random>
+#include <future>
 #include "TrafficLight.h"
 
 /* Implementation of class "MessageQueue" */
@@ -28,7 +29,6 @@ void MessageQueue<T>::send(T &&msg)
     std::lock_guard<std::mutex> uLock(_mtx);
     _queue.push_back(std::move(msg));
     _cond.notify_one(); // notify client after pushing message to queue
-
 }
 
 
@@ -37,6 +37,7 @@ void MessageQueue<T>::send(T &&msg)
 TrafficLight::TrafficLight()
 {
     _currentPhase = TrafficLightPhase::red;
+    _trafficLightQueue = std::make_shared<MessageQueue<TrafficLightPhase>>();
 }
 
 void TrafficLight::waitForGreen()
@@ -46,7 +47,7 @@ void TrafficLight::waitForGreen()
     // Once it receives TrafficLightPhase::green, the method returns.
     while (true)
     {
-        TrafficLightPhase message = _messageQueue.receive();
+        auto message = _trafficLightQueue->receive();
         if (message == TrafficLightPhase::green) return;
     }
     
@@ -80,15 +81,16 @@ void TrafficLight::cycleThroughPhases()
 
     while(true)
     {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
         auto end = std::chrono::high_resolution_clock::now();
 
         if (end - start > timeBetweenCycles)
         {
             if (getCurrentPhase() == TrafficLightPhase::green) _currentPhase = TrafficLightPhase::red;
             else  _currentPhase = TrafficLightPhase::green;
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            _messageQueue.send(std::move(_currentPhase));
-            auto start = std::chrono::high_resolution_clock::now();
+            auto ftr = std::async(std::launch::async, &MessageQueue<TrafficLightPhase>::send, _trafficLightQueue, std::move(_currentPhase));
+            ftr.wait();
+            start = std::chrono::high_resolution_clock::now();
         }
     }
 }
